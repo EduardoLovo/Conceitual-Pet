@@ -7,6 +7,23 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  DEV
+  ADMIN
+  SELLER
+  USER
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String
+  password  String // Será criptografada
+  role      Role     @default(USER) // Por padrão, quem se cadastra é cliente
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 enum BedModels {
   AMORA
   JUCA
@@ -29,15 +46,16 @@ model ProductImage {
 }
 
 model Product {
-  id          Int      @id @default(autoincrement())
+  id          Int            @id @default(autoincrement())
   model       BedModels
   description String
-  price       Decimal  @db.Decimal(10, 2)
+  price       Decimal        @db.Decimal(10, 2)
   color       String
-  size        Size   
+  size        Size
   stock       Int
   mainImage   String?
-  images      ProductImage[]  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  images      ProductImage[]
+  isFeatured  Boolean        @default(false)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 }

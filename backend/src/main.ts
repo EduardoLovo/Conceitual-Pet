@@ -2,11 +2,14 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+    const app = await NestFactory.create(AppModule);
 
-  // Habilita CORS para permitir que o frontend acesse
-  app.enableCors();
+    // Habilita CORS para permitir que o frontend acesse
+    app.enableCors();
 
-  await app.listen(process.env.PORT ?? 3000);
+    app.setGlobalPrefix('api');
+
+    await app.listen(process.env.PORT ?? 3000);
+    console.log('Api rodando em http://localhost:3000');
 }
 bootstrap();

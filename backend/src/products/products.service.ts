@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
-import { Prisma } from '@prisma/client';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class ProductsService {
@@ -40,6 +39,22 @@ export class ProductsService {
     async remove(id: number) {
         return this.prisma.product.delete({
             where: { id },
+        });
+    }
+
+    async findFeatured() {
+        return this.prisma.product.findMany({
+            where: {
+                isFeatured: true, // Filtra onde é verdadeiro
+            },
+            include: {
+                images: true,
+            },
+            // Opcional: Pegar só os últimos 4 ou 8
+            take: 8,
+            orderBy: {
+                createdAt: 'desc',
+            },
         });
     }
 }

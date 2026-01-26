@@ -1,4 +1,5 @@
 import {
+    IsBoolean,
     IsEnum,
     IsNotEmpty,
     IsNumber,
@@ -36,4 +37,8 @@ export class CreateProductDto {
     @IsString()
     @IsOptional()
     mainImage?: string;
+
+    @IsBoolean()
+    @IsOptional()
+    isFeatured?: boolean;
 }
