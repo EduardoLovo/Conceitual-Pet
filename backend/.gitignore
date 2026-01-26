@@ -49,3 +49,4 @@ nest-cli.json
 
 # TypeScript
 *.tsbuildinfo
+/generated/prisma
