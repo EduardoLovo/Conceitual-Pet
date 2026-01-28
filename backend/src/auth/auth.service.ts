@@ -5,6 +5,7 @@ import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto/login.dto'; // Vamos criar esse DTO agorinha
 import { RegisterDto } from './dto/register.dto';
 import { Role } from '@prisma/client';
+import { AuthResponse } from './interfaces/auth-response.interface';
 
 @Injectable()
 export class AuthService {
@@ -13,14 +14,27 @@ export class AuthService {
         private jwtService: JwtService,
     ) {}
 
-    async register(registerDto: RegisterDto) {
-        return this.usersService.create({
+    async register(registerDto: RegisterDto): Promise<AuthResponse> {
+        const user = await this.usersService.create({
             ...registerDto,
             role: Role.USER,
-        });
+        } as any);
+
+        const payload = { sub: user.id, email: user.email, role: user.role };
+
+        return {
+            access_token: this.jwtService.sign(payload),
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                phone: user.phone,
+                role: user.role,
+            },
+        };
     }
 
-    async login(loginDto: LoginDto) {
+    async login(loginDto: LoginDto): Promise<AuthResponse> {
         const user = await this.usersService.findByEmail(loginDto.email);
 
         if (!user) {
@@ -46,6 +60,7 @@ export class AuthService {
                 id: user.id,
                 name: user.name,
                 email: user.email,
+                phone: user.phone,
                 role: user.role,
             },
         };

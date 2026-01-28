@@ -1,4 +1,4 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, BadRequestException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -9,6 +9,11 @@ export class UsersService {
     constructor(private prisma: PrismaService) {}
 
     async create(data: CreateUserDto) {
+        // Verifica se a confirmação de senha confere (usando 'as any' para acessar campos que podem não estar no DTO ainda)
+        if ((data as any).password !== (data as any).passwordConfirm) {
+            throw new BadRequestException('A confirmação de senha não confere.');
+        }
+
         // 1. Verifica se o e-mail já existe
         const userExists = await this.prisma.user.findUnique({
             where: { email: data.email },
@@ -21,11 +26,14 @@ export class UsersService {
         // 2. Criptografa a senha (Hash)
         const hashedPassword = await bcrypt.hash(data.password, 10);
 
-        // 3. Salva no banco (removendo a senha do retorno)
+        // 3. Salva no banco (removendo a senha do retorno e o campo de confirmação)
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { passwordConfirm, ...userData } = data as any;
+
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { password, ...user } = await this.prisma.user.create({
             data: {
-                ...data,
+                ...userData, // Inclui 'phone' e outros dados, mas sem 'passwordConfirm'
                 password: hashedPassword,
             },
         });

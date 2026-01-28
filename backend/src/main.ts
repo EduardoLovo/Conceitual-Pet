@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -9,7 +10,10 @@ async function bootstrap() {
 
     app.setGlobalPrefix('api');
 
-    await app.listen(process.env.PORT ?? 3000);
-    console.log('Api rodando em http://localhost:3000');
+    const port = process.env.PORT ?? 3000;
+    await app.listen(port);
+    Logger.log(`Aplicação rodando em: http://localhost:${port}/api`, 'Bootstrap');
 }
-bootstrap();
+bootstrap().catch((err) => {
+    Logger.error(`Erro ao iniciar a aplicação: ${err.message}`, 'Bootstrap');
+});
