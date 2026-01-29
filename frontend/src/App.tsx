@@ -1,19 +1,45 @@
+import { Route, Routes } from 'react-router-dom';
+import { PrivateRoute } from './components/PrivateRoute';
+import { Admin } from './pages/Admin';
+import { Login } from './pages/Login';
+import { Register } from './pages/Register';
+import { Home } from './pages/Home';
+import { Navbar } from './components/Navbar';
+import { MeusPedidos } from './pages/MeusPedidos';
+
 function App() {
-  return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-xl shadow-lg text-center">
-        <h1 className="text-4xl font-bold text-blue-600 mb-4">
-          Conceitual Pet 🐾
-        </h1>
-        <p className="text-gray-600 text-lg">
-          Frontend rodando com React + Tailwind!
-        </p>
-        <button className="mt-6 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-          Botão Teste
-        </button>
-      </div>
-    </div>
-  )
+    return (
+        <div className="min-h-screen bg-gray-100">
+            <Navbar />
+            <Routes>
+                <Route path="/" element={<Home />} />
+
+                {/* Rotas Públicas */}
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+
+                {/* --- ROTA PROTEGIDA --- */}
+                {/* Apenas ADMIN e DEV podem entrar aqui */}
+                <Route
+                    path="/admin"
+                    element={
+                        <PrivateRoute roles={['ADMIN', 'DEV']}>
+                            <Admin />
+                        </PrivateRoute>
+                    }
+                />
+
+                <Route
+                    path="/meus-pedidos"
+                    element={
+                        <PrivateRoute>
+                            <MeusPedidos />
+                        </PrivateRoute>
+                    }
+                />
+            </Routes>
+        </div>
+    );
 }
 
-export default App
+export default App;
