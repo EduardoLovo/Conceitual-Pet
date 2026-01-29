@@ -5,13 +5,15 @@ import { UsersModule } from '../users/users.module'; // Importa o UsersModule
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './jwt.strategy';
+import { RecaptchaModule } from 'src/recaptcha/recaptcha.module';
 
 @Module({
     imports: [
+        RecaptchaModule,
         UsersModule,
         PassportModule,
         JwtModule.register({
-            secret: process.env.JWT_SECRET, 
+            secret: process.env.JWT_SECRET,
             signOptions: { expiresIn: '7d' }, // Token expira em 1 dia
         }),
     ],

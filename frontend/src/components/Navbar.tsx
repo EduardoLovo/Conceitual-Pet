@@ -1,50 +1,63 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
-export function Navbar() {
+const Navbar = () => {
+    const { isAuthenticated, signOut, user } = useAuth();
     const navigate = useNavigate();
-    // Verifica se tem token para mudar o botão de Login para Logout (Opcional, mas recomendado)
-    const token = localStorage.getItem('conceitualpet_token');
 
-    function handleLogout() {
-        localStorage.removeItem('conceitualpet_token');
-        navigate('/login');
-    }
+    const handleLogout = () => {
+        signOut();
+        navigate('/login'); // Manda de volta pro login ao sair
+    };
 
     return (
-        <nav className="bg-gray-800 p-4 text-white flex gap-4 justify-between items-center">
-            <div className="flex gap-4">
-                <Link to="/" className="font-bold text-xl">
-                    🐾 ConceitualPet
-                </Link>
-                <Link to="/" className="hover:text-gray-300 self-center">
-                    Home
+        <nav
+            style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                padding: '1rem 2rem',
+                backgroundColor: '#f8f9fa',
+                borderBottom: '1px solid #ddd',
+            }}
+        >
+            <div style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>
+                <Link to="/" style={{ textDecoration: 'none', color: '#333' }}>
+                    Conceitual Pet 🐾
                 </Link>
             </div>
 
-            <div className="flex gap-4 items-center">
-                {/* Podemos deixar o botão Admin visível ou esconder com lógica depois */}
-                <Link to="/admin" className="bg-red-500 px-3 py-1 rounded hover:bg-red-600 text-sm">
-                    Admin
-                </Link>
+            <div style={{ display: 'flex', gap: '20px' }}>
+                <Link to="/">Home</Link>
+                <Link to="/produtos">Camas</Link>
 
-                {token ? (
-                    <button
-                        onClick={handleLogout}
-                        className="hover:text-gray-300 self-center cursor-pointer"
-                    >
-                        Sair
-                    </button>
-                ) : (
+                {/* LÓGICA DE TROCA DE BOTÕES */}
+                {isAuthenticated ? (
+                    // Se estiver logado: Mostra "Sair" e talvez o nome
                     <>
-                        <Link to="/login" className="hover:text-gray-300 self-center">
-                            Login
-                        </Link>
-                        <Link to="/register" className="hover:text-gray-300 self-center">
-                            Cadastro
-                        </Link>
+                        <span>Olá, {user?.name || user?.email}</span>
+                        <button
+                            onClick={handleLogout}
+                            style={{
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                color: 'red',
+                                fontWeight: 'bold',
+                            }}
+                        >
+                            Sair
+                        </button>
+                    </>
+                ) : (
+                    // Se NÃO estiver logado: Mostra Login / Registro
+                    <>
+                        <Link to="/login">Login</Link>
+                        <Link to="/register">Cadastrar</Link>
                     </>
                 )}
             </div>
         </nav>
     );
-}
+};
+
+export default Navbar;

@@ -27,7 +27,7 @@ model User {
 
 enum BedModels {
   AMORA
-  JUCA
+  PUPS
 }
 
 enum Size {

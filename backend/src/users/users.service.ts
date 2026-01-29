@@ -1,7 +1,13 @@
-import { Injectable, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+    Injectable,
+    ConflictException,
+    BadRequestException,
+    InternalServerErrorException,
+} from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client'; // Importante para tipar o erro
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -9,36 +15,55 @@ export class UsersService {
     constructor(private prisma: PrismaService) {}
 
     async create(data: CreateUserDto) {
-        // Verifica se a confirmação de senha confere (usando 'as any' para acessar campos que podem não estar no DTO ainda)
+        // 1. Verifica confirmação de senha
         if ((data as any).password !== (data as any).passwordConfirm) {
-            throw new BadRequestException('A confirmação de senha não confere.');
+            throw new BadRequestException(
+                'A confirmação de senha não confere.',
+            );
         }
 
-        // 1. Verifica se o e-mail já existe
-        const userExists = await this.prisma.user.findUnique({
-            where: { email: data.email },
-        });
-
-        if (userExists) {
-            throw new ConflictException('Este e-mail já está cadastrado.');
-        }
-
-        // 2. Criptografa a senha (Hash)
+        // 2. Criptografa a senha
         const hashedPassword = await bcrypt.hash(data.password, 10);
 
-        // 3. Salva no banco (removendo a senha do retorno e o campo de confirmação)
+        // 3. Prepara os dados (remove passwordConfirm)
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { passwordConfirm, ...userData } = data as any;
 
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { password, ...user } = await this.prisma.user.create({
-            data: {
-                ...userData, // Inclui 'phone' e outros dados, mas sem 'passwordConfirm'
-                password: hashedPassword,
-            },
-        });
+        try {
+            // 4. Tenta Salvar no Banco
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { password, ...user } = await this.prisma.user.create({
+                data: {
+                    ...userData,
+                    password: hashedPassword,
+                },
+            });
 
-        return user;
+            return user;
+        } catch (error) {
+            // 5. Captura erros de duplicidade (Email ou Telefone)
+            if (error instanceof Prisma.PrismaClientKnownRequestError) {
+                // Código P2002: Violação de restrição única (Unique constraint failed)
+                if (error.code === 'P2002') {
+                    const target = error.meta?.target as string[];
+
+                    if (target.includes('email')) {
+                        throw new ConflictException(
+                            'Este e-mail já está cadastrado.',
+                        );
+                    }
+
+                    if (target.includes('phone')) {
+                        throw new ConflictException(
+                            'Já existe um usuário cadastrado com este telefone.',
+                        );
+                    }
+                }
+            }
+
+            // Se for outro erro, lança um erro genérico
+            throw new InternalServerErrorException('Erro ao criar usuário.');
+        }
     }
 
     async findAll() {

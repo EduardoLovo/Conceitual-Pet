@@ -1,73 +1,89 @@
 import { useState } from 'react';
-import api from '../services/api'; // Importamos nossa configuração
-import { useNavigate } from 'react-router-dom';
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
+import { useNavigate } from 'react-router-dom'; // Para redirecionar
+import api from '../services/api';
+import { useAuth } from '../context/AuthContext'; // Nosso hook novo
 
-export function Login() {
-    const navigate = useNavigate();
+const Login = () => {
+    const { executeRecaptcha } = useGoogleReCaptcha();
+    const { signIn } = useAuth(); // Função global de login
+    const navigate = useNavigate(); // Função de redirecionamento
 
-    // Estados para guardar o que o usuário digita
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
+    const [status, setStatus] = useState('');
 
-    async function handleLogin(e: React.FormEvent) {
-        e.preventDefault(); // Evita que a página recarregue
-        setError(''); // Limpa erros anteriores
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setStatus('Validando...');
+
+        if (!executeRecaptcha) {
+            setStatus('Erro: Recaptcha não carregado.');
+            return;
+        }
 
         try {
-            // Chama o backend
-            const response = await api.post('/auth/login', {
-                email,
-                password,
-            });
+            const tokenRecaptcha = await executeRecaptcha('login');
 
-            // Se chegou aqui, deu sucesso!
-            const { access_token } = response.data;
+            // Faz a requisição ao Backend
+            const response = await api.post(
+                '/auth/login',
+                { email, password },
+                { headers: { 'recaptcha-token': tokenRecaptcha } },
+            );
 
-            // 1. Salva o token no navegador
-            localStorage.setItem('conceitualpet_token', access_token);
+            // Sucesso!
+            console.log('Dados do Backend:', response.data);
 
-            // 2. Redireciona para a Home (ou Dashboard)
-            alert('Login realizado com sucesso!'); // Temporário
+            // 1. Salva os dados no Contexto (Global)
+            // Ajuste 'response.data.user' e 'response.data.access_token' conforme seu backend retorna
+            const userBackend = response.data.user || { email: email };
+            const tokenBackend = response.data.access_token || 'token-exemplo';
+
+            signIn(userBackend, tokenBackend);
+
+            // 2. Redireciona para a Home
             navigate('/');
-        } catch (err) {
-            console.error(err);
-            setError('Email ou senha incorretos!');
+        } catch (error: any) {
+            console.error(error);
+            if (error.response?.status === 403) {
+                setStatus('Bloqueado: Verificação de segurança falhou 🤖');
+            } else if (error.response?.status === 401) {
+                setStatus('Email ou senha inválidos.');
+            } else {
+                setStatus('Erro no servidor.');
+            }
         }
-    }
+    };
 
     return (
-        <div className="p-8 flex justify-center items-center min-h-[80vh]">
-            <div className="bg-white p-8 rounded-lg shadow-lg w-96">
-                <h1 className="text-2xl font-bold mb-6 text-center text-gray-800">Login</h1>
-
-                <form onSubmit={handleLogin} className="flex flex-col gap-4">
-                    <input
-                        type="email"
-                        placeholder="Email"
-                        className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:border-primary"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                    />
-
-                    <input
-                        type="password"
-                        placeholder="Senha"
-                        className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:border-primary"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                    />
-
-                    {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-
-                    <button
-                        type="submit"
-                        className="w-full bg-primary text-white py-2 rounded hover:bg-indigo-700 transition duration-200"
-                    >
-                        Entrar
-                    </button>
-                </form>
-            </div>
+        <div style={{ maxWidth: '400px', margin: '50px auto', textAlign: 'center' }}>
+            <h2>Login Conceitual Pet 🐶</h2>
+            <form
+                onSubmit={handleLogin}
+                style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}
+            >
+                <input
+                    type="email"
+                    placeholder="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    style={{ padding: '10px' }}
+                />
+                <input
+                    type="password"
+                    placeholder="Senha"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    style={{ padding: '10px' }}
+                />
+                <button type="submit" style={{ padding: '10px', cursor: 'pointer' }}>
+                    Entrar
+                </button>
+            </form>
+            {status && <p style={{ color: 'red', marginTop: '10px' }}>{status}</p>}
         </div>
     );
-}
+};
+
+export default Login;

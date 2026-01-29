@@ -1,8 +1,15 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+    Controller,
+    Post,
+    Body,
+    HttpCode,
+    HttpStatus,
+    UseGuards,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
-import { CreateUserDto } from 'src/users/dto/create-user.dto';
 import { RegisterDto } from './dto/register.dto';
+import { RecaptchaGuard } from 'src/recaptcha/recaptcha.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -10,6 +17,7 @@ export class AuthController {
 
     @HttpCode(HttpStatus.OK)
     @Post('login')
+    @UseGuards(RecaptchaGuard)
     signIn(@Body() loginDto: LoginDto) {
         return this.authService.login(loginDto);
     }
